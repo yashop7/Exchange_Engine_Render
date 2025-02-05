@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "tsc -b --omit=dev",
+    "build": "npx tsc -b --omit=dev",
     "start": "WITH_SNAPSHOT=true node dist/index.js",
     "dev": "npm run build && WITH_SNAPSHOT=true npm run start",
     "test": "vitest"
@@ -23,6 +23,7 @@
     "vitest": "^1.6.0"
   },
   "devDependencies": {
-    "@types/node-cron": "^3.0.11"
+    "@types/node-cron": "^3.0.11",
+    "typescript": "^5.7.3"
   }
 }
