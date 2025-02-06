@@ -77,7 +77,7 @@ app.get('/health', (req, res) => {
 });
 
 // Cron job to keep the server alive
-cron.schedule('*/5 * * * *', () => {
+cron.schedule('*/12 * * * *', () => {
     console.log('Health check - server is alive');
 });
 
