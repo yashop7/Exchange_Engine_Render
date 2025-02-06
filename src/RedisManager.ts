@@ -30,7 +30,7 @@ type DbMessage = {
 }
 
 export class RedisManager {
-    private client: RedisClientType;
+    // private client: RedisClientType;
     private apiclient : RedisClientType;
     private static instance: RedisManager;
     private pusher : any
@@ -41,8 +41,8 @@ export class RedisManager {
             console.log("Redis URL and token must be provided in environment variables.");
             throw new Error("Redis URL and token must be provided in environment variables.");
         }
-        this.client = createClient();
-        this.client.connect();
+        // this.client = createClient();
+        // this.client.connect();
 
 
         this.pusher = new Pusher({
@@ -75,12 +75,12 @@ export class RedisManager {
         console.log("----------------------");
         console.log("PUSHING MESSAGE TO THE QUEUE", message);
         console.log("----------------------");
-        this.client.lPush("db_processor", JSON.stringify(message));
+        this.apiclient.lPush("db_processor", JSON.stringify(message));
     }
 
     public publishMessage(channel: string, message: WsMessage) {
         console.log("PUBLISHING MESSAGE TO CHANNEL", channel, message);
-        this.client.publish(channel, JSON.stringify(message));
+        // this.client.publish(channel, JSON.stringify(message));
         
         // Using Pusher to trigger an event on the channel.
         this.pusher.trigger(channel, "my-event", message)
