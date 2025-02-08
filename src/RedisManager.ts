@@ -47,7 +47,8 @@ export class RedisManager {
   // private client: RedisClientType;
   private apiclient: RedisClientType;
   private static instance: RedisManager;
-  private pusher: any;
+  private APIpusher: any;
+  private WSpusher: any;
 
   constructor() {
     if (!apiredisurl) {
@@ -61,14 +62,14 @@ export class RedisManager {
     // this.client = createClient();
     // this.client.connect();
 
-    this.pusher = new Pusher({
+    this.WSpusher = new Pusher({
       appId: appId || "",
       key: key || "",
       secret: secret || "",
       cluster: cluster || "",
       useTLS: useTLS,
     });
-    this.pusher = new Pusher({
+    this.APIpusher = new Pusher({
       appId: api_pusher_id || "",
       key: api_pusher_key || "",
       secret: api_pusher_secret || "",
@@ -102,7 +103,7 @@ export class RedisManager {
     // this.client.publish(channel, JSON.stringify(message));
 
     // Using Pusher to trigger an event on the channel.
-    this.pusher
+    this.WSpusher
       .trigger(channel, "my-event", message)
       .then(() => {
         console.log("Message published to WS Server successfully");
@@ -119,7 +120,7 @@ export class RedisManager {
     // console.log("SENDING MESSAGE TO API", clientId, message);
     // this.apiclient.publish(clientId, JSON.stringify(message));
     
-    this.pusher
+    this.APIpusher
       .trigger(clientId, "my-event", message)
       .then(() => {
         console.log("Message published to successfully");
