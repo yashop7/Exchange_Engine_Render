@@ -116,7 +116,7 @@ export class RedisManager {
 
   public sendToApi(clientId: string, message: MessageToApi) {
     //This is the First PubSub which Talks to the API Server
-    console.log("SENDING MESSAGE TO API", clientId, message);
+    // console.log("SENDING MESSAGE TO API", clientId, message);
     // this.apiclient.publish(clientId, JSON.stringify(message));
     
     this.pusher
