@@ -105,7 +105,7 @@ export class RedisManager {
     this.pusher
       .trigger(channel, "my-event", message)
       .then(() => {
-        console.log("Message published successfully");
+        console.log("Message published to WS Server successfully");
       })
       .catch((error: any) => {
         console.error("Error publishing message:", error);
@@ -122,7 +122,7 @@ export class RedisManager {
     this.pusher
       .trigger(clientId, "my-event", message)
       .then(() => {
-        console.log("Message published successfully");
+        console.log("Message published to successfully");
       })
       .catch((error: any) => {
         console.error("Error publishing message:", error);
