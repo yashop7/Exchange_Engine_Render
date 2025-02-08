@@ -98,7 +98,7 @@ export class RedisManager {
   }
 
   public publishMessage(channel: string, message: WsMessage) {
-    console.log("PUBLISHING MESSAGE TO CHANNEL", channel, message);
+    console.log("PUBLISHING MESSAGE TO WS PubSub CHANNEL", channel, message);
     // this.client.publish(channel, JSON.stringify(message));
 
     // Using Pusher to trigger an event on the channel.
