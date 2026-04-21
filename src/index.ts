@@ -1,30 +1,27 @@
 import { createClient } from "redis";
 import { Engine } from "./trade/Engine";
-import { redisToken, redisUrl } from "./config";
+import { redisApiEngineUrl } from "./config";
 import * as cron from 'node-cron';
 import express from 'express';
 
 async function main() {
     const engine = new Engine();
-    
-    if (!redisUrl || !redisToken) {
-        console.log("Redis URL and token must be provided in environment variables.");
-        throw new Error("Redis URL and token must be provided in environment variables.");
+
+    if (!redisApiEngineUrl) {
+        throw new Error("REDIS_API_ENGINE_URL must be set in environment variables.");
     }
 
-    const redisClient = createClient(
-        {
-        url: redisUrl,
-    }
-);
+    const redisClient = createClient({
+        url: redisApiEngineUrl,
+        socket: { reconnectStrategy: false },
+    });
 
-    // Handle Redis errors
     redisClient.on('error', (err) => {
-        console.error('Redis Client Error:', err);
+        console.error('Redis Client Error:', err.message);
     });
 
     await redisClient.connect();
-    console.log("Connected to Redis Queue");
+    console.log("Waiting for events from Redis Queue which will be pushed by API server");
 
     const processMessages = async () => {
         try {

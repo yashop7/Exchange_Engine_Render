@@ -72,30 +72,20 @@ export class Orderbook {
       const { executedQty, fills } = this.matchBid(order);
       order.filled = executedQty;
       if (executedQty === order.quantity) {
-        return {
-          executedQty,
-          fills,
-        };
+        return { executedQty, fills };
       }
-      this.bids.push(order); //If the the order is Not fully Filled then we will push the order in the bids table
-      return {
-        executedQty,
-        fills,
-      };
+      order.quantity -= executedQty; // store remaining qty so getDepth() shows correct value
+      this.bids.push(order);
+      return { executedQty, fills };
     } else {
       const { executedQty, fills } = this.matchAsk(order);
       order.filled = executedQty;
       if (executedQty === order.quantity) {
-        return {
-          executedQty,
-          fills,
-        };
+        return { executedQty, fills };
       }
-      this.asks.push(order); //If the the order is Not fully Filled then we will push the order in the Asks table
-      return {
-        executedQty,
-        fills,
-      };
+      order.quantity -= executedQty; // store remaining qty so getDepth() shows correct value
+      this.asks.push(order);
+      return { executedQty, fills };
     }
   }
 

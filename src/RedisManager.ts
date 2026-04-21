@@ -1,22 +1,8 @@
-import { DEPTH_UPDATE, TICKER_UPDATE } from "./trade/events";
 import { RedisClientType, createClient } from "redis";
 import { ORDER_UPDATE, TRADE_ADDED } from "./types";
 import { WsMessage } from "./types/toWs";
 import { MessageToApi } from "./types/toApi";
-import {
-  redisUrl as apiredisurl,
-  appId,
-  key,
-  secret,
-  cluster,
-  useTLS,
-  api_pusher_id,
-  api_pusher_key,
-  api_pusher_tls,
-  api_pusher_cluster,
-  api_pusher_secret,
-} from "./config";
-import Pusher from "pusher";
+import { redisApiEngineUrl, redisEngineDownstreamUrl } from "./config";
 
 type DbMessage =
   | {
@@ -43,44 +29,40 @@ type DbMessage =
       };
     };
 
+function makeClient(url: string, label: string): RedisClientType {
+  const client = createClient({
+    url,
+    socket: { reconnectStrategy: false },
+  }) as RedisClientType;
+
+  client.on("error", (err) => {
+    console.error(`[${label}] Redis error: ${err.message}`);
+  });
+
+  client.connect().catch((err) => {
+    console.error(`[${label}] Failed to connect: ${err.message}`);
+  });
+
+  return client;
+}
+
 export class RedisManager {
-  // private client: RedisClientType;
-  private apiclient: RedisClientType;
+  // Instance 1: API <-> Engine
+  private apiEngineClient: RedisClientType;
+  // Instance 2: Engine -> WebSocket pubsub + DB Processor queue
+  private downstreamClient: RedisClientType;
+
   private static instance: RedisManager;
-  private APIpusher: any;
-  private WSpusher: any;
 
   constructor() {
-    if (!apiredisurl) {
-      console.log(
-        "Redis URL and token must be provided in environment variables."
-      );
+    if (!redisApiEngineUrl || !redisEngineDownstreamUrl) {
       throw new Error(
-        "Redis URL and token must be provided in environment variables."
+        "REDIS_API_ENGINE_URL and REDIS_ENGINE_DOWNSTREAM_URL must be set in environment variables."
       );
     }
-    // this.client = createClient();
-    // this.client.connect();
 
-    this.WSpusher = new Pusher({
-      appId: appId || "",
-      key: key || "",
-      secret: secret || "",
-      cluster: cluster || "",
-      useTLS: useTLS,
-    });
-    this.APIpusher = new Pusher({
-      appId: api_pusher_id || "",
-      key: api_pusher_key || "",
-      secret: api_pusher_secret || "",
-      cluster: api_pusher_cluster || "",
-      useTLS: api_pusher_tls === "true",
-    });
-
-    this.apiclient = createClient({
-      url: apiredisurl,
-    });
-    this.apiclient.connect();
+    this.apiEngineClient = makeClient(redisApiEngineUrl, "API-Engine");
+    this.downstreamClient = makeClient(redisEngineDownstreamUrl, "Downstream");
   }
 
   public static getInstance() {
@@ -90,43 +72,26 @@ export class RedisManager {
     return this.instance;
   }
 
+  // Engine -> DB Processor queue (Instance 2)
   public pushMessage(message: DbMessage) {
-    //This is here we are Pushing into the Queue which is reaching the DB
     console.log("----------------------");
-    console.log("PUSHING MESSAGE TO THE QUEUE", message);
+    console.log("PUSHING MESSAGE TO DB QUEUE", message);
     console.log("----------------------");
-    this.apiclient.lPush("db_processor", JSON.stringify(message));
+    this.downstreamClient.lPush("db_processor", JSON.stringify(message));
   }
 
+  // Engine -> WebSocket pubsub (Instance 2)
   public publishMessage(channel: string, message: WsMessage) {
-    console.log("PUBLISHING MESSAGE TO WS PubSub CHANNEL", channel, message);
-    // this.client.publish(channel, JSON.stringify(message));
-
-    // Using Pusher to trigger an event on the channel.
-    this.WSpusher
-      .trigger(channel, "my-event", message)
-      .then(() => {
-        console.log("Message published to WS Server successfully");
-      })
-      .catch((error: any) => {
-        console.error("Error publishing message:", error);
-      });
+    console.log("PUBLISHING TO WS CHANNEL", channel, message);
+    this.downstreamClient.publish(channel, JSON.stringify(message)).catch((err) => {
+      console.error("Error publishing WS message:", err.message);
+    });
   }
-  //SEARCH FOR THIS LINE IN WS SERVER
-  // this.redisClient.subscribe(subscription, this.redisCallbackHandler);
 
+  // Engine -> API pubsub (Instance 1)
   public sendToApi(clientId: string, message: MessageToApi) {
-    //This is the First PubSub which Talks to the API Server
-    // console.log("SENDING MESSAGE TO API", clientId, message);
-    // this.apiclient.publish(clientId, JSON.stringify(message));
-    
-    this.APIpusher
-      .trigger(clientId, "my-event", message)
-      .then(() => {
-        console.log("Message published to successfully");
-      })
-      .catch((error: any) => {
-        console.error("Error publishing message:", error);
-      });
+    this.apiEngineClient.publish(clientId, JSON.stringify(message)).catch((err) => {
+      console.error("Error publishing API message:", err.message);
+    });
   }
 }

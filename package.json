@@ -4,9 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "npx tsc -b",
+    "build": "bunx tsc -b",
     "start": "WITH_SNAPSHOT=true node dist/index.js",
-    "dev": "npm run build && WITH_SNAPSHOT=true npm run start",
+    "dev": "bun run build && WITH_SNAPSHOT=true bun run start",
     "test": "vitest"
   },
   "keywords": [],

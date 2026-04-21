@@ -123,7 +123,7 @@ export class Engine {
 
                     if (order.side === "buy") {
                         const price = cancelOrderbook.cancelBid(order)
-                        const leftQuantity = (order.quantity - order.filled) * order.price;
+                        const leftQuantity = order.quantity * order.price; // order.quantity is already remaining qty
                         //@ts-ignore
                         this.balances.get(order.userId)[BASE_CURRENCY].available += leftQuantity;
                         //@ts-ignore
@@ -133,7 +133,7 @@ export class Engine {
                         }
                     } else {
                         const price = cancelOrderbook.cancelAsk(order)
-                        const leftQuantity = order.quantity - order.filled;
+                        const leftQuantity = order.quantity; // order.quantity is already remaining qty
                         //@ts-ignore
                         this.balances.get(order.userId)[quoteAsset].available += leftQuantity;
                         //@ts-ignore
@@ -312,7 +312,6 @@ export class Engine {
     }
 
     publishWsTrades(fills: Fill[], userId: string, market: string) {
-        console.log("fills:THIS I AHVE REQUESTED  ", fills);
         fills.forEach(fill => {
             RedisManager.getInstance().publishMessage(`trade.${market}`, {
                 stream: `trade.${market}`,
