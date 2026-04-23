@@ -32,7 +32,7 @@ type DbMessage =
 function makeClient(url: string, label: string): RedisClientType {
   const client = createClient({
     url,
-    socket: { reconnectStrategy: false },
+    socket: { reconnectStrategy: (retries) => Math.min(retries * 500, 10000) },
   }) as RedisClientType;
 
   client.on("error", (err) => {

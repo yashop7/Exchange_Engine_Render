@@ -13,7 +13,9 @@ async function main() {
 
     const redisClient = createClient({
         url: redisApiEngineUrl,
-        socket: { reconnectStrategy: false },
+        socket: {
+            reconnectStrategy: (retries) => Math.min(retries * 500, 10000),
+        },
     });
 
     redisClient.on('error', (err) => {
@@ -23,25 +25,28 @@ async function main() {
     await redisClient.connect();
     console.log("Waiting for events from Redis Queue which will be pushed by API server");
 
+    const waitForReady = (): Promise<void> =>
+        new Promise((resolve) => {
+            if (redisClient.isReady) return resolve();
+            redisClient.once('ready', resolve);
+        });
+
     const processMessages = async () => {
         try {
-            // Use BRPOP instead of RPOP - it blocks until a message is available
-            // Timeout of 0 means it will block indefinitely
-            const result = await redisClient.brPop(
-                'messages',
-                0
-            );
+            if (!redisClient.isReady) {
+                await waitForReady();
+            }
+
+            const result = await redisClient.brPop('messages', 0);
 
             if (result) {
                 const { element: message } = result;
-                await engine.process(JSON.parse(message));
+                engine.process(JSON.parse(message));
             }
 
-            // Process next message
             setImmediate(processMessages);
         } catch (error) {
             console.error('Error processing message:', error);
-            // Wait a bit before retrying in case of errors
             setTimeout(processMessages, 1000);
         }
     };
